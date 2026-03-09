@@ -1,1 +1,93 @@
+---
+- name: Configure DevOps environment
+  hosts: all
+  become: yes
+  tasks:
 
+  - name: Update apt cache
+    apt:
+      update_cache: yes
+
+  - name: Install Java (OpenJDK 17)
+    apt:
+      name: openjdk-17-jdk
+      state: present
+
+- name: Install Jenkins, Terraform on devops-master
+  hosts: masters
+  become: yes
+  tasks:
+
+  - name: Add Jenkins key and repo
+    apt_key:
+      url: https://pkg.jenkins.io/debian/jenkins.io.key
+      state: present
+
+  - name: Add Jenkins repo
+    apt_repository:
+      repo: deb https://pkg.jenkins.io/debian binary/
+      state: present
+
+  - name: Install Jenkins
+    apt:
+      name: jenkins=2.414.3
+      state: present
+      update_cache: yes
+
+  - name: Start and enable Jenkins
+    systemd:
+      name: jenkins
+      enabled: yes
+      state: started
+
+  - name: Install Terraform prerequisites
+    apt:
+      name: unzip
+      state: present
+
+  - name: Download Terraform 1.5.7
+    get_url:
+      url: https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip
+      dest: /tmp/terraform.zip
+
+  - name: Unzip Terraform
+    unarchive:
+      src: /tmp/terraform.zip
+      dest: /usr/local/bin/
+      remote_src: yes
+
+- name: Install Docker on devops-agent
+  hosts: agents
+  become: yes
+  tasks:
+
+  - name: Install Docker prerequisites
+    apt:
+      name: 
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - software-properties-common
+      state: present
+
+  - name: Add Docker GPG key
+    apt_key:
+      url: https://download.docker.com/linux/ubuntu/gpg
+      state: present
+
+  - name: Add Docker repo
+    apt_repository:
+      repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+      state: present
+
+  - name: Install Docker (latest stable)
+    apt:
+      name: docker-ce
+      state: present
+      update_cache: yes
+
+  - name: Add user to Docker group
+    user:
+      name: ubuntu
+      groups: docker
+      append: yes
